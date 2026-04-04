@@ -1,0 +1,27 @@
+@startuml C2 — Context Diagram (уровень системы)
+
+!include <C4/C4_Context.puml>
+
+Person(patient, "Пациент", "Записывается, смотрит данные")
+Person(doctor, "Врач", "Работает с медкартами")
+Person(analyst, "Аналитик", "Строит отчёты")
+
+System(portal, "Портал / Моб. приложение", "Запись, ЛК")
+System(classifier, "Классификационный движок", "Классифицирует данные перед загрузкой")
+System(dw, "Аналитическое хранилище", "Слои данных с контролем доступа")
+
+System_Ext(lab, "Лаборатория анализов", "API анализов")
+System_Ext(excel, "Excel / 1С / Сканы", "Текущие источники")
+
+Rel(patient, portal, "Записывается, смотрит")
+Rel(doctor, portal, "Работает с данными")
+Rel(analyst, dw, "Строит отчёты")
+
+Rel(portal, classifier, "Отправляет данные", "JSON/Protobuf")
+Rel(lab, classifier, "Результаты анализов", "API")
+Rel(excel, classifier, "Пакетная загрузка", "CSV")
+
+Rel(classifier, dw, "Размеченные данные", "Kafka/S3")
+Rel(classifier, classifier, "Логирует аудит", "Audit Log")
+
+@enduml
