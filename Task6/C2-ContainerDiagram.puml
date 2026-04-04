@@ -1,0 +1,34 @@
+@startuml C2 — Container Diagram (движок классификации)
+!include <C4/C4_Container.puml>
+
+Person(patient, "Пациент")
+
+System_Boundary(classifier, "Классификационный движок") {
+    Container(landing, "Landing Zone", "MinIO / S3", "Сырые данные из источников")
+    Container(schema_detector, "Schema Detector", "Python + Avro", "Обнаружение изменений схемы")
+    Container(rule_classifier, "Rule Classifier", "Regex + словари", "Быстрая классификация")
+    Container(ml_classifier, "ML Classifier", "RuBERT + Triton", "Контентная классификация")
+    Container(policy_engine, "Policy Engine", "OPA / Rego", "Правила доступа и тегирования")
+    Container(enricher, "Metadata Enricher", "Python", "Добавляет теги, TTL")
+    Container(output_queue, "Output Queue", "Kafka", "Очередь для загрузки в DW")
+    Container(audit_log, "Audit Logger", "ClickHouse / S3", "Логи классификации")
+    Container(metrics, "Metrics Exporter", "Prometheus", "Метрики для мониторинга")
+}
+
+Container(dw, "Analytical Data Warehouse", "ClickHouse + S3", "Слои: Raw / Trusted / Gold / Vault")
+Container(monitoring, "Monitoring", "Prometheus + Grafana", "Алерты и дашборды")
+
+Rel(patient, landing, "Данные через портал", "HTTPS")
+Rel(landing, schema_detector, "Новые файлы")
+Rel(schema_detector, rule_classifier, "Схема известна")
+Rel(schema_detector, ml_classifier, "Схема изменена → дообучение")
+Rel(rule_classifier, policy_engine, "Результат rules")
+Rel(ml_classifier, policy_engine, "Вероятности классов")
+Rel(policy_engine, enricher, "Класс + confidence")
+Rel(enricher, output_queue, "Обогащённые данные")
+Rel(output_queue, dw, "Потоковая загрузка", "Kafka Connect")
+Rel(policy_engine, audit_log, "Аудит каждого решения")
+Rel(enricher, metrics, "Метрики (precision, recall)")
+Rel(metrics, monitoring, "Scrape")
+
+@enduml
